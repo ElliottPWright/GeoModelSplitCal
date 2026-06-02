@@ -16,4 +16,7 @@ public:
 private:
   RunConfig m_cfg;
   std::unique_ptr<G4ParticleGun> m_gun;
+
+  double m_rand_x;
+  double m_rand_y;
 };
