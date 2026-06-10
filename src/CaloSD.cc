@@ -34,31 +34,29 @@ G4bool CaloSD::ProcessHits(G4Step* step, G4TouchableHistory*) {
   if (edep <= 0) return false;
   
   // Track collection EPWL
-
   auto* track = step->GetTrack();
+  if (!track || track->GetTrackID() != 1) return false;
 
-  if(track->GetTrackID() == 1) {   // primary muon only
+  const auto pre  = step->GetPreStepPoint()->GetPosition();
+  const auto post = step->GetPostStepPoint()->GetPosition();
 
-    ParsedID id = parse(vname);
-    int layer = id.layer;
+  const auto& touch = step->GetPreStepPoint()->GetTouchableHandle();
+  const std::string vname = touch->GetVolume()->GetName();
 
-    auto it = m_crossings.find(layer);
+  int layer = parseLayer(vname);
+  if (layer < 0) return false;
 
-    if(it == m_crossings.end()) {
+  auto& cross = m_crossings[layer];
 
-        LayerCrossing crossing;
-        crossing.layer = layer;
-        crossing.entryPos = pre;
-        crossing.exitPos  = post;
+  // first time we see this layer → set entry
+  if (!cross.initialized) {
+    cross.layer = layer;
+    cross.entryPos = pre;
+    cross.initialized = true;
+  }
 
-        m_crossings[layer] = crossing;
-    }
-    else {
-
-        // continually update exit point
-        it->second.exitPos = post;
-    }
-}
+  // always update exit
+  cross.exitPos = post;
   
   auto& agg = m_map[vname];
   agg.edep += edep;
@@ -105,16 +103,14 @@ void CaloSD::EndOfEvent(G4HCofThisEvent*) {
     m_store->addHit(id, agg.edep, posGlobal, posLocal);
   }
   
-  for (const auto& [key, crossing] : m_crossings) {
+  for (const auto& [layer, cross] : m_crossings)
+  {
+    if (!cross.initialized) continue;
 
-    G4ThreeVector centre =
-        0.5*(crossing.entryPos + crossing.exitPos);
+    G4ThreeVector point =
+        0.5 * (cross.entryPos + cross.exitPos);
 
-    m_store->addLayerCrossing(
-        crossing.hcal,
-        crossing.layer,
-        centre
-    );
+    m_store->addTrackPoint(layer, point);
   }
 }
 
