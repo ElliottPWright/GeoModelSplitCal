@@ -16,7 +16,7 @@ public:
               const G4ThreeVector& posGlobal,
               const G4ThreeVector& posLocal);
 
-  void addLayerCrossing(int hcal,
+  void addLayerCrossing(int ecal,
                         int layer,
                         const G4ThreeVector& pos);
 
@@ -28,7 +28,7 @@ public:
 
   // Truth track points
   std::vector<int> crossing_layer;
-  std::vector<int> crossing_hcal;
+  std::vector<int> crossing_ecal;
 
   std::vector<double> crossing_x;
   std::vector<double> crossing_y;
