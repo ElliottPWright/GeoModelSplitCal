@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include <map>
 
 struct HitAgg {
   double edep = 0.0;
@@ -29,6 +30,14 @@ struct ParsedID {
   int hexant = 11;
 };
 
+//New structure for MCS reconstruction
+
+struct LayerCrossing {
+  int layer;
+  G4ThreeVector entryPos;
+  G4ThreeVector exitPos;
+};
+
 class EventStore; // forward
 
 class CaloSD : public G4VSensitiveDetector {
@@ -42,6 +51,8 @@ public:
 private:
   EventStore* m_store = nullptr;
   std::unordered_map<std::string, HitAgg> m_map;
+  
+  std::map<int, LayerCrossing> m_crossings;
 
   static ParsedID parse(const std::string& name);
 };
