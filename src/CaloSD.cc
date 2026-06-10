@@ -36,11 +36,7 @@ G4bool CaloSD::ProcessHits(G4Step* step, G4TouchableHistory*) {
   // Track collection EPWL
   auto* track = step->GetTrack();
   if (!track || track->GetTrackID() != 1) return false;
-
-  const auto pre  = step->GetPreStepPoint()->GetPosition();
-  const auto post = step->GetPostStepPoint()->GetPosition();
-
-  const auto& touch = step->GetPreStepPoint()->GetTouchableHandle();
+  
   const std::string vname = touch->GetVolume()->GetName();
 
   int layer = parseLayer(vname);
