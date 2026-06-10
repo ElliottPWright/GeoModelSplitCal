@@ -16,9 +16,7 @@ public:
               const G4ThreeVector& posGlobal,
               const G4ThreeVector& posLocal);
 
-  void addLayerCrossing(int ecal,
-                        int layer,
-                        const G4ThreeVector& pos);
+  void addTrackPoint(int layer, const G4ThreeVector& pos);
 
   std::vector<double> edep, x_global, y_global, z_global;
   std::vector<double> x_local, y_local, z_local;
@@ -27,10 +25,9 @@ public:
                    hpl_sublayer, hexant;
 
   // Truth track points
-  std::vector<int> crossing_layer;
-  std::vector<int> crossing_ecal;
-
-  std::vector<double> crossing_x;
-  std::vector<double> crossing_y;
-  std::vector<double> crossing_z;
+   // reconstructed track points
+  std::vector<int> track_layer;
+  std::vector<double> track_x;
+  std::vector<double> track_y;
+  std::vector<double> track_z;
 };
