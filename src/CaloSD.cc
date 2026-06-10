@@ -13,6 +13,7 @@ CaloSD::CaloSD(const G4String& name, EventStore* store)
 
 void CaloSD::Initialize(G4HCofThisEvent*) {
   m_map.clear();
+  m_crossings.clear();
 }
 
 G4bool CaloSD::ProcessHits(G4Step* step, G4TouchableHistory*) {
@@ -32,7 +33,32 @@ G4bool CaloSD::ProcessHits(G4Step* step, G4TouchableHistory*) {
 
   if (edep <= 0) return false;
   
-  
+  // Track collection EPWL
+
+  auto* track = step->GetTrack();
+
+  if(track->GetTrackID() == 1) {   // primary muon only
+
+    ParsedID id = parse(vname);
+    int layer = id.layer;
+
+    auto it = m_crossings.find(layer);
+
+    if(it == m_crossings.end()) {
+
+        LayerCrossing crossing;
+        crossing.layer = layer;
+        crossing.entryPos = pre;
+        crossing.exitPos  = post;
+
+        m_crossings[layer] = crossing;
+    }
+    else {
+
+        // continually update exit point
+        it->second.exitPos = post;
+    }
+}
   
   auto& agg = m_map[vname];
   agg.edep += edep;
@@ -78,7 +104,18 @@ void CaloSD::EndOfEvent(G4HCofThisEvent*) {
     const auto posLocal  = agg.sumEposLocal / agg.edep;
     m_store->addHit(id, agg.edep, posGlobal, posLocal);
   }
+  
+  for (const auto& [key, crossing] : m_crossings) {
 
+    G4ThreeVector centre =
+        0.5*(crossing.entryPos + crossing.exitPos);
+
+    m_store->addLayerCrossing(
+        crossing.hcal,
+        crossing.layer,
+        centre
+    );
+  }
 }
 
 ParsedID CaloSD::parse(const std::string& name) {
