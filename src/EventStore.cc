@@ -3,8 +3,8 @@
 
 void EventStore::clear() {
   edep.clear(); x_global.clear(); y_global.clear(); z_global.clear(); x_local.clear(); y_local.clear(); z_local.clear();
-  type.clear(); section.clear(); layer.clear(); vol.clear(); hcal.clear(); crossing_ecal.clear(); crossing_layer.clear();
-  crossing_x.clear(); crossing_y.clear(); crossing_z.clear();
+  type.clear(); section.clear(); layer.clear(); vol.clear(); hcal.clear(); track_layer.clear();
+  track_x.clear(); track_y.clear(); track_z.clear();
 }
 
 void EventStore::addHit(const ParsedID& id, double e, const G4ThreeVector& p_global,const G4ThreeVector& p_local) {
@@ -21,14 +21,10 @@ void EventStore::addHit(const ParsedID& id, double e, const G4ThreeVector& p_glo
 }
 
 
-void EventStore::addLayerCrossing(int ecal_,
-                                  int layer_,
-                                  const G4ThreeVector& pos)
+void EventStore::addTrackPoint(int layer, const G4ThreeVector& pos)
 {
-    crossing_hcal.push_back(ecal_);
-    crossing_layer.push_back(layer_);
-
-    crossing_x.push_back(pos.x());
-    crossing_y.push_back(pos.y());
-    crossing_z.push_back(pos.z());
+  track_layer.push_back(layer);
+  track_x.push_back(pos.x());
+  track_y.push_back(pos.y());
+  track_z.push_back(pos.z());
 }
