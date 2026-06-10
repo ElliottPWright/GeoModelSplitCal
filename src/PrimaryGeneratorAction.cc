@@ -18,6 +18,13 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(const RunConfig& cfg)
 
   m_gun->SetParticleDefinition(def);
   m_gun->SetParticleEnergy(m_cfg.energy_MeV * MeV);
+  
+  double m_rand_x = (G4UniformRand() * 4000) - 2000;
+  double m_rand_y = (G4UniformRand() * 6000) - 3000;
+
+  double rand_dx = (G4UniformRand() * 4000) - m_rand_x - 2000;
+  double rand_dy = (G4UniformRand() * 6000) - m_rand_y - 3000;
+	
 
   double m_rand_x = (G4UniformRand() * 4000) - 2000;
   double m_rand_y = (G4UniformRand() * 6000) - 3000;
