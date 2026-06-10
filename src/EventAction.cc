@@ -31,6 +31,18 @@ EventAction::EventAction(EventStore* store) : m_store(store) {
   man->CreateNtupleIColumn("hexant",     m_store->hexant);
 
   man->FinishNtuple();
+
+  // For track events
+  man->CreateNtuple("track_events", "track points");
+
+  man->CreateNtupleIColumn("track_layer", m_store->track_layer);
+
+  man->CreateNtupleDColumn("track_x", m_store->track_x);
+  man->CreateNtupleDColumn("track_y", m_store->track_y);
+  man->CreateNtupleDColumn("track_z", m_store->track_z);
+
+  man->FinishNtuple();
+  
 }
 
 void EventAction::BeginOfEventAction(const G4Event* event) {
