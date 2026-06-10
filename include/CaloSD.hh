@@ -33,9 +33,10 @@ struct ParsedID {
 //New structure for MCS reconstruction
 
 struct LayerCrossing {
-  int layer;
+  int layer = -1;
   G4ThreeVector entryPos;
   G4ThreeVector exitPos;
+  bool initialized = false;
 };
 
 class EventStore; // forward
