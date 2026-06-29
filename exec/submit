@@ -1,0 +1,17 @@
+
+universe = vanilla
+
+Executable     = .run_simulation_-3525117721622081453.sh
+
+# output       = /eos/home-e/elwright/GeoModelSplitCal/exec/root:/eosuser.cern.ch/eos/user/e/elwright/EPWL_ECAL_Simulations/run000/logs/out_$(Process).test
+log            = /eos/home-e/elwright/GeoModelSplitCal/exec/root:/eosuser.cern.ch/eos/user/e/elwright/EPWL_ECAL_Simulations/run000/logs/condor.log
+error          = /eos/home-e/elwright/GeoModelSplitCal/exec/root:/eosuser.cern.ch/eos/user/e/elwright/EPWL_ECAL_Simulations/run000/logs/error_$(Process).test
+
+request_memory = 1GB
+
+
+arguments = $(input)
+getenv = True
+
+queue 10
+

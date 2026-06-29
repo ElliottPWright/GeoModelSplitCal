@@ -18,6 +18,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(const RunConfig& cfg)
 
   m_gun->SetParticleDefinition(def);
   m_gun->SetParticleEnergy(m_cfg.energy_MeV * MeV);
+<<<<<<< HEAD
   
   double m_rand_x = (G4UniformRand() * 4000) - 2000;
   double m_rand_y = (G4UniformRand() * 6000) - 3000;
@@ -36,21 +37,30 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(const RunConfig& cfg)
   m_gun->SetParticleMomentumDirection(
     G4ThreeVector(rand_dx, rand_dy, 65530).unit()
   );
+=======
+>>>>>>> 8ceb1e6 (Reco test 29.06.26)
 }
 
 PrimaryGeneratorAction::~PrimaryGeneratorAction() = default;
 
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
 {
-  double x = (m_cfg.position_mm[0] + m_rand_x) * mm;
-  double y = (m_cfg.position_mm[1] + m_rand_y) * mm;
-  double z = (m_cfg.position_mm[2] - 0.5 * 120827.0) * mm;
+ // Roll fresh position and direction every event
+ double x = (G4UniformRand() * 4000) - 2000;
+ double y = (G4UniformRand() * 6000) - 3000;
+ double z = (m_cfg.position_mm[2] - 0.5 * 120827.0) * mm;
 
+ double dx = (G4UniformRand() * 4000) - x - 2000;
+ double dy = (G4UniformRand() * 6000) - y - 3000;
 
-  if (m_cfg.sigma_xy_mm > 0) {
+ if (m_cfg.sigma_xy_mm > 0) {
     x += G4RandGauss::shoot(0.0, m_cfg.sigma_xy_mm * mm);
     y += G4RandGauss::shoot(0.0, m_cfg.sigma_xy_mm * mm);
   }
+
+  m_gun->SetParticleMomentumDirection(
+    G4ThreeVector(dx, dy, 65530).unit()
+  );
 
   m_gun->SetParticlePosition(G4ThreeVector(x,y,z));
   m_gun->GeneratePrimaryVertex(event);
