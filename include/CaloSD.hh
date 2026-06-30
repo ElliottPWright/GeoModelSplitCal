@@ -54,7 +54,7 @@ private:
   EventStore* m_store = nullptr;
   std::unordered_map<std::string, HitAgg> m_map;
   
-  std::map<std::pair<int,int>, LayerCrossing> m_crossings;
+  std::unordered_map<std::pair<int,int>, LayerCrossing> m_crossings;
 
   static ParsedID parse(const std::string& name);
 };
