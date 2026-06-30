@@ -40,13 +40,14 @@ G4bool CaloSD::ProcessHits(G4Step* step, G4TouchableHistory*) {
   ParsedID id = parse(vname);
   if (id.layer < 0) return false;
 
-  std::pair<int,int> key{id.hcal, id.layer}
+  std::pair<int,int> key{id.hcal, id.layer};
   
-  auto& cross = m_crossings[layer];
+  auto& cross = m_crossings[key];
 
   // first time we see this layer → set entry
   if (!cross.initialized) {
-    cross.layer = layer;
+    cross.layer = id.layer;
+    cross.id = id;
     cross.entryPos = pre;
     cross.initialized = true;
   }
