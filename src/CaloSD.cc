@@ -37,11 +37,11 @@ G4bool CaloSD::ProcessHits(G4Step* step, G4TouchableHistory*) {
   auto* track = step->GetTrack();
   if (!track || track->GetTrackID() != 1) return false;
   
-  const std::string vname = touch->GetVolume()->GetName();
-
-  int layer = parseLayer(vname);
+  ParsedID id = parse(vname);
   if (layer < 0) return false;
 
+  std::pair<int,int> key{id.hcal, id.layer}
+  
   auto& cross = m_crossings[layer];
 
   // first time we see this layer → set entry
@@ -99,14 +99,13 @@ void CaloSD::EndOfEvent(G4HCofThisEvent*) {
     m_store->addHit(id, agg.edep, posGlobal, posLocal);
   }
   
-  for (const auto& [layer, cross] : m_crossings)
+  for (const auto& [key, cross] : m_crossings)
   {
-    if (!cross.initialized) continue;
-
+    const auto& id = cross.id;
     G4ThreeVector point =
         0.5 * (cross.entryPos + cross.exitPos);
 
-    m_store->addTrackPoint(layer, point);
+    m_store->addTrackPoint(id.layer, point);
   }
 }
 
