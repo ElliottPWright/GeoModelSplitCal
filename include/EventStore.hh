@@ -25,7 +25,7 @@ public:
                    hpl_sublayer, hexant;
 
   // Truth track points
-   // reconstructed track points
+   // for reconstructed momentum based on MCS
   std::vector<int> track_layer;
   std::vector<double> track_x;
   std::vector<double> track_y;
