@@ -38,7 +38,7 @@ G4bool CaloSD::ProcessHits(G4Step* step, G4TouchableHistory*) {
   if (!track || track->GetTrackID() != 1) return false;
   
   ParsedID id = parse(vname);
-  if (layer < 0) return false;
+  if (id.layer < 0) return false;
 
   std::pair<int,int> key{id.hcal, id.layer}
   
