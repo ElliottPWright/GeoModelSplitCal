@@ -34,6 +34,8 @@ G4bool CaloSD::ProcessHits(G4Step* step, G4TouchableHistory*) {
   if (edep <= 0) return false;
   
   // Track collection EPWL
+  int eventID = step->GetTrack()->GetEventID();
+
   auto* track = step->GetTrack();
   if (!track || track->GetTrackID() != 1) return false;
   
@@ -105,8 +107,6 @@ void CaloSD::EndOfEvent(G4HCofThisEvent*) {
     const auto& id = cross.id;
     G4ThreeVector point =
         0.5 * (cross.entryPos + cross.exitPos);
-
-    int eventID = step->GetTrack()->GetEventID();
     
     m_store->addTrackPoint(eventID, id.layer, point);
   }

@@ -16,7 +16,7 @@ public:
               const G4ThreeVector& posGlobal,
               const G4ThreeVector& posLocal);
 
-  void addTrackPoint(int layer, const G4ThreeVector& pos);
+  void addTrackPoint(int eventID,int layer, const G4ThreeVector& pos);
 
   std::vector<double> edep, x_global, y_global, z_global;
   std::vector<double> x_local, y_local, z_local;

@@ -34,7 +34,7 @@ struct ParsedID {
 
 struct LayerCrossing {
   int layer = -1;
-  ParsedID id
+  ParsedID id;
   G4ThreeVector entryPos;
   G4ThreeVector exitPos;
   bool initialized = false;
