@@ -3,7 +3,7 @@
 
 void EventStore::clear() {
   edep.clear(); x_global.clear(); y_global.clear(); z_global.clear(); x_local.clear(); y_local.clear(); z_local.clear();
-  type.clear(); section.clear(); layer.clear(); vol.clear(); hcal.clear(); track_layer.clear();
+  type.clear(); section.clear(); layer.clear(); vol.clear(); hcal.clear(); eventID.clear(); track_layer.clear();
   track_x.clear(); track_y.clear(); track_z.clear();
 }
 
@@ -23,6 +23,7 @@ void EventStore::addHit(const ParsedID& id, double e, const G4ThreeVector& p_glo
 
 void EventStore::addTrackPoint(int layer, const G4ThreeVector& pos)
 {
+  eventID.push_back(eventID);
   track_layer.push_back(layer);
   track_x.push_back(pos.x());
   track_y.push_back(pos.y());
