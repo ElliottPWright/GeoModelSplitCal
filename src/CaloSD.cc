@@ -106,7 +106,9 @@ void CaloSD::EndOfEvent(G4HCofThisEvent*) {
     G4ThreeVector point =
         0.5 * (cross.entryPos + cross.exitPos);
 
-    m_store->addTrackPoint(id.layer, point);
+    int eventID = step->GetTrack()->GetEventID();
+    
+    m_store->addTrackPoint(eventID, id.layer, point);
   }
 }
 
