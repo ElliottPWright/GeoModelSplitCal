@@ -35,6 +35,8 @@ EventAction::EventAction(EventStore* store) : m_store(store) {
   // For track events
   man->CreateNtuple("track_events", "track points");
 
+  man->CreateNtupleIColumn("event_ID", m_store->eventID);
+  
   man->CreateNtupleIColumn("track_layer", m_store->track_layer);
 
   man->CreateNtupleDColumn("track_x", m_store->track_x);
