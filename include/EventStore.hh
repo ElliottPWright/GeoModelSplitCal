@@ -26,6 +26,7 @@ public:
 
   // Truth track points
    // for reconstructed momentum based on MCS
+  std::vector<int> eventID;
   std::vector<int> track_layer;
   std::vector<double> track_x;
   std::vector<double> track_y;
