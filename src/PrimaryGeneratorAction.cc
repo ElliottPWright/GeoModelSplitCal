@@ -18,27 +18,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(const RunConfig& cfg)
 
   m_gun->SetParticleDefinition(def);
   m_gun->SetParticleEnergy(m_cfg.energy_MeV * MeV);
-<<<<<<< HEAD
-  
-  double m_rand_x = (G4UniformRand() * 4000) - 2000;
-  double m_rand_y = (G4UniformRand() * 6000) - 3000;
 
-  double rand_dx = (G4UniformRand() * 4000) - m_rand_x - 2000;
-  double rand_dy = (G4UniformRand() * 6000) - m_rand_y - 3000;
-	
-
-  double m_rand_x = (G4UniformRand() * 4000) - 2000;
-  double m_rand_y = (G4UniformRand() * 6000) - 3000;
-
-  double rand_dx = (G4UniformRand() * 4000) - m_rand_x - 2000;
-  double rand_dy = (G4UniformRand() * 6000) - m_rand_y - 3000;
-
-
-  m_gun->SetParticleMomentumDirection(
-    G4ThreeVector(rand_dx, rand_dy, 65530).unit()
-  );
-=======
->>>>>>> 8ceb1e6 (Reco test 29.06.26)
 }
 
 PrimaryGeneratorAction::~PrimaryGeneratorAction() = default;

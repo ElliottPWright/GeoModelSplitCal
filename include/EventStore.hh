@@ -23,11 +23,5 @@ public:
 
   std::vector<int> type, section, layer, vol, hcal,
                    hpl_sublayer, hexant;
-
-  // Truth track points
-   // reconstructed track points
-  std::vector<int> track_layer;
-  std::vector<double> track_x;
-  std::vector<double> track_y;
-  std::vector<double> track_z;
+  
 };

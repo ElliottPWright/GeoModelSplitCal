@@ -13,7 +13,6 @@ CaloSD::CaloSD(const G4String& name, EventStore* store)
 
 void CaloSD::Initialize(G4HCofThisEvent*) {
   m_map.clear();
-  m_crossings.clear();
 }
 
 G4bool CaloSD::ProcessHits(G4Step* step, G4TouchableHistory*) {
@@ -33,26 +32,7 @@ G4bool CaloSD::ProcessHits(G4Step* step, G4TouchableHistory*) {
 
   if (edep <= 0) return false;
   
-  // Track collection EPWL
-  auto* track = step->GetTrack();
-  if (!track || track->GetTrackID() != 1) return false;
   
-  const std::string vname = touch->GetVolume()->GetName();
-
-  int layer = parseLayer(vname);
-  if (layer < 0) return false;
-
-  auto& cross = m_crossings[layer];
-
-  // first time we see this layer → set entry
-  if (!cross.initialized) {
-    cross.layer = layer;
-    cross.entryPos = pre;
-    cross.initialized = true;
-  }
-
-  // always update exit
-  cross.exitPos = post;
   
   auto& agg = m_map[vname];
   agg.edep += edep;
@@ -98,16 +78,7 @@ void CaloSD::EndOfEvent(G4HCofThisEvent*) {
     const auto posLocal  = agg.sumEposLocal / agg.edep;
     m_store->addHit(id, agg.edep, posGlobal, posLocal);
   }
-  
-  for (const auto& [layer, cross] : m_crossings)
-  {
-    if (!cross.initialized) continue;
 
-    G4ThreeVector point =
-        0.5 * (cross.entryPos + cross.exitPos);
-
-    m_store->addTrackPoint(layer, point);
-  }
 }
 
 ParsedID CaloSD::parse(const std::string& name) {
