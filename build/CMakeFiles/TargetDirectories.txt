@@ -1,5 +1,0 @@
-/eos/user/e/elwright/GeoModelSplitCal/build/CMakeFiles/CaloGeo.dir
-/eos/user/e/elwright/GeoModelSplitCal/build/CMakeFiles/make_leadplate_db.dir
-/eos/user/e/elwright/GeoModelSplitCal/build/CMakeFiles/run_g4.dir
-/eos/user/e/elwright/GeoModelSplitCal/build/CMakeFiles/edit_cache.dir
-/eos/user/e/elwright/GeoModelSplitCal/build/CMakeFiles/rebuild_cache.dir

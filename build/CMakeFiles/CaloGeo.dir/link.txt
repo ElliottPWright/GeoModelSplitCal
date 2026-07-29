@@ -1,2 +1,0 @@
-/cvmfs/sft.cern.ch/lcg/releases/binutils/2.40-acaab/x86_64-el9/bin/ar qc libCaloGeo.a CMakeFiles/CaloGeo.dir/src/MaterialManager.cpp.o CMakeFiles/CaloGeo.dir/src/ConfigReader.cpp.o CMakeFiles/CaloGeo.dir/src/CalorimeterBuilder.cpp.o CMakeFiles/CaloGeo.dir/src/BarLayer.cpp.o CMakeFiles/CaloGeo.dir/src/Fibre_HPLayer.cpp.o
-/cvmfs/sft.cern.ch/lcg/releases/binutils/2.40-acaab/x86_64-el9/bin/ranlib libCaloGeo.a
