@@ -1,0 +1,15 @@
+# run.mac set for generating frustrum of particles
+
+#/gps/particle mu-
+#/gps/pos/type Plane
+#/gps/pos/shape Rectangle
+#/gps/pos/halfx 2000 mm
+#/gps/pos/halfy 3000 mm
+
+/control/verbose 2
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+/run/initialize
+/tracking/storeTrajectory 1
+/run/beamOn/ 10

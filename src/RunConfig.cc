@@ -47,10 +47,12 @@ RunConfig readRunConfigFile(const std::string& path) {
 
     if      (key == "n_events")       cfg.n_events = std::stoi(val);
     else if (key == "particle")       cfg.particle = val;
+    else if (key == "half_lengths")   cfg.half_lengths = parse3(val);  // EPWL 20/07: to generate rectangular starting points 
     else if (key == "energy_MeV")     cfg.energy_MeV = std::stod(val);
     else if (key == "position_mm")    cfg.position_mm = parse3(val);
     else if (key == "direction")      cfg.direction = parse3(val);
     else if (key == "sigma_xy_mm")    cfg.sigma_xy_mm = std::stod(val);
+    else if (key == "gaussian")       cfg.gaussian = std::stoi(val);
     else if (key == "macro")          cfg.macro = val;
     else if (key == "seed")           cfg.seed = std::stol(val);
     else if (key == "write_gdml")     cfg.write_gdml = std::stoi(val);

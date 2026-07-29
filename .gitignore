@@ -1,0 +1,60 @@
+# Executables
+*.exe
+*.out
+*.app
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.ko
+*.pyc
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+*.lib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# CMake
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+# backup files
+*.*~
+*.swp
+*.swo
+
+# build directory & data directory
+build/
+
+# VM stuff
+.vagrant/
+
+# OS X
+*.idea
+*.DS_Store
+
+# IPython notebooks
+*.ipynb_checkpoints
+
+# FairShip-specific files
+c++
+cc
+
+# Eclipse
+*.project
+*.pydevproject
+
+# Merge conflict artifacts
+.merge_file_*
+*.orig
