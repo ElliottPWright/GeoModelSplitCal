@@ -1,4 +1,4 @@
-#Instructions for geometry display
+# Instructions for geometry display
 
 mkdir build
 cd build
@@ -10,7 +10,7 @@ gmex geometry.db
 changes in calo.cfg should be reflected in the geometry after running
 
 
-#Instruction for simulation run
+# Instruction for simulation run
 
 mkdir build
 cd build
