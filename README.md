@@ -2,7 +2,11 @@
 
 Welcome to the GeoModelSplitCal repository, a standalone simulation for the SHiP ECAL + HCAL.
 
-# Instructions for geometry display
+# Current Jobs
+
+- Implementation of appropriate materials into the module gaps
+
+# Instructions for geometry display (still Matei's)
 
 mkdir build
 
