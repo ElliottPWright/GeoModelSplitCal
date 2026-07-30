@@ -18,9 +18,13 @@ changes in calo.cfg should be reflected in the geometry after running
 # Instruction for simulation run
 
 mkdir build
+
 cd build
+
 cmake ..
+
 make
+
 ./run_g4
 
 It should be noted that the coordinate system for the detector placement originates at 0,0,0 at the target region
