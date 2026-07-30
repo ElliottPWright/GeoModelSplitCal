@@ -1,10 +1,15 @@
 # Instructions for geometry display
 
 mkdir build
+
 cd build
+
 cmake ..
+
 make
+
 ./make_leadplate_db
+
 gmex geometry.db
 
 changes in calo.cfg should be reflected in the geometry after running
