@@ -34,5 +34,7 @@ You can change parameters in .cfg files
 Visualisation can be added through visualize = 1 (enable visualisation)
 
 0 (default) : world + module envelopes only          (fastest)
+
 1           : world + module + layer envelopes       (medium)  
+
 2           : full detail, all bars/fibres           (slowest)
