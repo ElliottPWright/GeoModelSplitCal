@@ -30,20 +30,6 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction() = default;
 
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
 {
- // THIS IS LECACY CODE FROM THE ORIGINAL EDIT TO PRIMARY GENERATOR ACTION
- //Currently have randomness switched off (EPWL 20th July)
- //for beginning of decay frustrum production
- // Roll fresh position and direction every event
-//  double x = (G4UniformRand() * 2000) - 1000;
-//  double y = (G4UniformRand() * 3000) - 1500;
-//  double z = (m_cfg.position_mm[2] - 0.5 * 120827.0) * mm;
-
-//  double dx = (G4UniformRand() * 4000) - x - 2000;
-//  double dy = (G4UniformRand() * 6000) - y - 3000;
-
-  // m_gun->SetParticleMomentumDirection(
-  //   G4ThreeVector(dx, dy, 50000).unit()
-  // );
 
   // EPWL 27/07: When nothing is specified, use the default position and direction from the config file. 
   // If the user specifies a direction, use that instead.
