@@ -29,6 +29,11 @@ struct CalorimeterConfig {
   double module_pitch_x_mm = 0.0; // if 0 -> use plate_xy_mm
   double module_pitch_y_mm = 0.0; // if 0 -> use plate_xy_mm
 
+  double module_gap_mm = 100.0;
+
+  double boundary_air_mm = 45.0;
+  double boundary_steel_mm = 5.0;
+
   double tol_x_mm = 10;
   double tol_y_mm = 10;
   double tol_z_mm = 10;

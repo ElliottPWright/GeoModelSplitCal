@@ -105,6 +105,12 @@ GeoMaterial* MaterialManager::iron()
   return m;
 }
 
+GeoMaterial* MaterialManager::steel()
+{
+  // Alias to iron for now (steel ~ iron for geometry purposes)
+  return iron();
+}
+
 MaterialManager::RGBA MaterialManager::rgbaFor(const std::string& name) const
 {
   // Defaults: white opaque

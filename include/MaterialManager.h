@@ -14,7 +14,8 @@ public:
   // Return existing or create+cache
   GeoMaterial* air();   // simple air proxy (N)
   GeoMaterial* lead();  // Pb
-  GeoMaterial* iron();  // Pb
+  GeoMaterial* iron();  // Fe
+  GeoMaterial* steel(); // alias for iron (convenience)
   GeoMaterial* pvt();   // C9H10, density ~1.032 g/cm3
   GeoMaterial* polystyrene(); 
   GeoMaterial* aluminum();

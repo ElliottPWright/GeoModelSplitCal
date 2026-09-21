@@ -21,6 +21,19 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
   auto* psMat   = MM.polystyrene();
 
   const double plateXY = cfg.plate_xy_mm * mm;
+
+  const double totalX = cfg.plate_xy_mm * mm;
+  const double totalY = cfg.plate_xy_mm * mm;
+
+  const double moduleGap = cfg.module_gap_mm * mm;
+
+  const double moduleX =
+    (totalX - (cfg.module_nx - 1) * moduleGap)
+    / cfg.module_nx;
+
+  const double moduleY =
+    (totalY - (cfg.module_ny - 1) * moduleGap)
+    / cfg.module_ny;
   const double leadZ   = cfg.lead_thickness_mm * mm;
   const double scintZ  = cfg.scint_thickness_mm * mm;
   const double airGapZ = cfg.airgap_mm * mm;
@@ -35,14 +48,16 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
   auto makeLayerEnv = [&](GeoVPhysVol* module,
                           const std::string& envName,
                           double halfZ,          // in GeoModel length units (already *mm)
-                          double zCenter) -> GeoPhysVol*
+                          double zCenter,
+			  double centerX,
+                        double centerY) -> GeoPhysVol*
   {
       auto* envShape = new GeoBox(0.5*plateXY, 0.5*plateXY, halfZ);
       auto* envLog   = new GeoLogVol((envName + "_LOG").c_str(), envShape, MM.air());
       auto* envPhys  = new GeoPhysVol(envLog);
   
       module->add(new GeoNameTag(envName.c_str()));
-      module->add(new GeoTransform(GeoTrf::Translate3D(0, 0, zCenter)));
+      module->add(new GeoTransform(GeoTrf::Translate3D(centerX, centerY, zCenter)));
       module->add(envPhys);
   
       return envPhys;
@@ -113,16 +128,33 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
   
   double zCursor = cfg.center_stack ? -0.5 * totalZ : 0.0;
 
-  int globalsensLayer = 0;
-  int globalLayer = 0;
-  for (int code : cfg.layers) {
-    if (code == 7) {
+  for (int mx = 0; mx < cfg.module_nx; ++mx) {
+	  for (int my = 0; my < cfg.module_ny; ++my) {
+		  const double moduleCenterX =
+			  -0.5 * totalX
+                          + 0.5 * moduleX
+                          + mx * (moduleX + moduleGap);
+		  const double moduleCenterY =
+			  -0.5 * totalY
+                          + 0.5 * moduleY
+                          + my * (moduleY + moduleGap);
+		  int globalsensLayer = 0;
+		  int globalLayer = 0;
+		  for (int code : cfg.layers) {
+	
+        if (code == 7) {
         const double zCenter = zCursor + 0.5*leadZ;
         const std::string envName =
           "ECAL_GL" + std::to_string(globalLayer) +
           "_Lead" + mtag;
         
-        auto* env = makeLayerEnv(world, envName, 0.5*leadZ, zCenter);
+        auto* env = makeLayerEnv(
+    world,
+    envName,
+    0.5 * leadZ,
+    zCenter,
+    moduleCenterX,
+    moduleCenterY);
         
         auto* platePhys = new GeoPhysVol(leadLog);
         env->add(new GeoNameTag((envName).c_str()));
@@ -143,7 +175,13 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
           "_SL" + std::to_string(globalsensLayer) +
           "_WidePVT_H" + mtag;
         
-        auto* env = makeLayerEnv(world, envName, 0.5*scintZ, zCenter);
+        auto* env = makeLayerEnv(
+    world,
+    envName,
+    0.5 * leadZ,
+    zCenter,
+    moduleCenterX,
+    moduleCenterY);
         
         // place bars inside env at local z=0
         BarLayer::place(env, wideHLog, 60.0, 36,
@@ -166,7 +204,13 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
           "_SL" + std::to_string(globalsensLayer) +
           "_WidePVT_V" + mtag;
         
-        auto* env = makeLayerEnv(world, envName, 0.5*scintZ, zCenter);
+        auto* env = makeLayerEnv(
+    world,
+    envName,
+    0.5 * leadZ,
+    zCenter,
+    moduleCenterX,
+    moduleCenterY);
         
         // place bars inside env at local z=0
         BarLayer::place(env, wideVLog, 60.0, 36,
@@ -189,7 +233,13 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
           "_SL" + std::to_string(globalsensLayer) +
           "_ThinPS_H" + mtag;
         
-        auto* env = makeLayerEnv(world, envName, 0.5*scintZ, zCenter);
+        auto* env = makeLayerEnv(
+    world,
+    envName,
+    0.5 * leadZ,
+    zCenter,
+    moduleCenterX,
+    moduleCenterY);
         
         // place bars inside env at local z=0
         BarLayer::place(env, thinHLog, 10.0, 216,
@@ -212,7 +262,13 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
           "_SL" + std::to_string(globalsensLayer) +
           "_ThinPS_V" + mtag;
         
-        auto* env = makeLayerEnv(world, envName, 0.5*scintZ, zCenter);
+        auto* env = makeLayerEnv(
+    world,
+    envName,
+    0.5 * leadZ,
+    zCenter,
+    moduleCenterX,
+    moduleCenterY);
         
         // place bars inside env at local z=0
         BarLayer::place(env, thinVLog, 10.0, 216,
@@ -235,7 +291,13 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
           "_SL" + std::to_string(globalsensLayer) +
           "_HPL" + mtag;
         
-        auto* env = makeLayerEnv(world, envName, 0.5*hplZ, zCenter);
+        auto* env = makeLayerEnv(
+    world,
+    envName,
+    0.5 * leadZ,
+    zCenter,
+    moduleCenterX,
+    moduleCenterY);
         
         Fibre_HPLayer::build(env, MM.aluminum(), MM.polystyrene(),
                              ("ECAL_GL"+std::to_string(globalLayer)+
@@ -260,7 +322,13 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
           "_SL" + std::to_string(globalsensLayer) +
           "_HPL" + mtag;
         
-        auto* env = makeLayerEnv(world, envName, 0.5*hplZ, zCenter);
+        auto* env = makeLayerEnv(
+    world,
+    envName,
+    0.5 * leadZ,
+    zCenter,
+    moduleCenterX,
+    moduleCenterY);
         
         Fibre_HPLayer::build(env, MM.aluminum(), MM.polystyrene(),
                              ("ECAL_GL"+std::to_string(globalLayer)+
@@ -282,13 +350,15 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
       zCursor += airGapZ;
       ++iGap;
     }
+   }
+  }
   }
   int iIron = 0;  // iron counter
  
   zCursor += cfg.gap_ecal_hcal_mm;
     
-  globalLayer=0;
-  globalsensLayer=0;
+  int globalLayer=0;
+  int globalsensLayer=0;
   for (int code : cfg.layers2) {
   
     if (code == 7) {
@@ -308,7 +378,7 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
           "_SL" + std::to_string(globalsensLayer) +
           "_HPL" + mtag;
         
-        auto* env = makeLayerEnv(world, envName, 0.5*hplZ, zCenter);
+        auto* env = makeLayerEnv(world, envName, 0.5*hplZ, zCenter, 0.0, 0.0);
         
         Fibre_HPLayer::build(env, MM.aluminum(), MM.polystyrene(),
                              ("HCAL_GL"+std::to_string(globalLayer)+
@@ -334,7 +404,7 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
           "_SL" + std::to_string(globalsensLayer) +
           "_HPL" + mtag;
         
-        auto* env = makeLayerEnv(world, envName, 0.5*hplZ, zCenter);
+        auto* env = makeLayerEnv(world, envName, 0.5*hplZ, zCenter, 0.0, 0.0);
         
         Fibre_HPLayer::build(env, MM.aluminum(), MM.polystyrene(),
                              ("HCAL_GL"+std::to_string(globalLayer)+
@@ -362,7 +432,7 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
           "_SL" + std::to_string(globalsensLayer) +
           "_WidePVT_H" + mtag;
         
-        auto* env = makeLayerEnv(world, envName, 0.5*scintZ, zCenter);
+        auto* env = makeLayerEnv(world, envName, 0.5*scintZ, zCenter, 0.0, 0.0);
         
         // place bars inside env at local z=0
         BarLayer::place(env, wideHLog, 60.0, 36,
@@ -387,7 +457,7 @@ void CalorimeterBuilder::buildStack(GeoVPhysVol* world, MaterialManager& MM, con
           "_SL" + std::to_string(globalsensLayer) +
           "_WidePVT_V" + mtag;
         
-        auto* env = makeLayerEnv(world, envName, 0.5*scintZ, zCenter);
+        auto* env = makeLayerEnv(world, envName, 0.5*scintZ, zCenter, 0.0, 0.0);
         
         // place bars inside env at local z=0
         BarLayer::place(env, wideVLog, 60.0, 36,

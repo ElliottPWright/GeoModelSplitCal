@@ -15,13 +15,14 @@
 
 #include "GeoModelKernel/GeoNameTag.h"
 #include "GeoModelKernel/GeoTransform.h"
+#include <vector>
 
 
 
 // GeoModel2G4
 #include "GeoModel2G4/Geo2G4AssemblyFactory.h"
 #include "GeoModel2G4/Geo2G4AssemblyVolume.h"
-#include "GeoModel2G4/ExtParameterisedVolumeBuilder.h"
+#include "GeoModel2G4/VolumeBuilder.h"
 
 // Geant4
 #include "G4Box.hh"
@@ -112,6 +113,7 @@ for (int ix = 0; ix < nx; ++ix) {
     const int mx = ix + 1;   // 1..nx
     const int my = iy + 1;   // 1..ny
 
+    // Precomputed grid centers
     const double x = x0 + ix * pitchX + cfg.detector_offset_x_mm * GeoModelKernelUnits::mm;
     const double y = y0 + iy * pitchY + cfg.detector_offset_y_mm * GeoModelKernelUnits::mm;
     // detector_offset_z_mm is in beam coords: 0 = front face of world.
@@ -132,6 +134,142 @@ for (int ix = 0; ix < nx; ++ix) {
   }
 }
 
+  // ---- Inter-module boundary plates (steel + optional explicit air slabs)
+  // Compute grid centres along X and Y
+  std::vector<double> xs(nx), ys(ny);
+  for (int ix = 0; ix < nx; ++ix) xs[ix] = x0 + ix * pitchX + cfg.detector_offset_x_mm * GeoModelKernelUnits::mm;
+  for (int iy = 0; iy < ny; ++iy) ys[iy] = y0 + iy * pitchY + cfg.detector_offset_y_mm * GeoModelKernelUnits::mm;
+
+  const double plateSize = cfg.plate_xy_mm * GeoModelKernelUnits::mm;
+  const double totalYSpan = (ny > 1) ? ((ny - 1) * pitchY + plateSize) : plateSize;
+  const double totalXSpan = (nx > 1) ? ((nx - 1) * pitchX + plateSize) : plateSize;
+  // Limit inter-module slabs to ECAL region only
+  const double ecalZ_mm = GetSystemThickness(cfg.layers,
+                                              cfg.scint_thickness_mm,
+                                              cfg.scint_thickness_mm,
+                                              cfg.hpl_thickness_mm,
+                                              cfg.lead_thickness_mm,
+                                              cfg.airgap_mm);
+  const double ecalZ = ecalZ_mm * GeoModelKernelUnits::mm;
+  const double halfZ = 0.5 * ecalZ;
+
+  const double moduleWorldZ = cfg.detector_offset_z_mm * GeoModelKernelUnits::mm - 0.5 * worldZ;
+  const double ecalCenterLocal = cfg.center_stack ? (-0.5 * aworldZ * GeoModelKernelUnits::mm + 0.5 * ecalZ) : (0.5 * ecalZ);
+  const double slabWorldZ = moduleWorldZ + ecalCenterLocal;
+
+  // X-direction boundaries (between columns)
+  // Desired per-side: 4.5 cm air + 0.5 cm steel (so between modules: air(4.5)+steel(0.5)+steel(0.5)+air(4.5)=10 cm)
+  const double airSideX   = 45.0 * GeoModelKernelUnits::mm;
+  const double steelSideX = 5.0  * GeoModelKernelUnits::mm;
+  const double totalReqX  = 2.0 * (airSideX + steelSideX);
+  for (int ix = 0; ix < nx - 1; ++ix) {
+    const double leftEdge  = xs[ix] + 0.5 * plateSize;
+    const double rightEdge = xs[ix+1] - 0.5 * plateSize;
+    const double gapX = rightEdge - leftEdge;
+    if (gapX <= 0) continue;
+
+    double aSide = airSideX;
+    double sSide = steelSideX;
+    if (gapX < totalReqX) {
+      // clamp proportionally if physical gap is smaller than desired
+      const double scale = gapX / totalReqX;
+      aSide *= scale;
+      sSide *= scale;
+    }
+
+    // place left air
+    const double leftAirC = leftEdge + 0.5 * aSide;
+    auto* airShapeL = new GeoBox(0.5 * aSide, 0.5 * totalYSpan, halfZ);
+    auto* airLogL   = new GeoLogVol(("InterModuleAir_X" + std::to_string(ix) + "_L_LOG").c_str(), airShapeL, MM.air());
+    auto* airPhysL  = new GeoPhysVol(airLogL);
+    worldPhys->add(new GeoNameTag(("InterModuleAir_X" + std::to_string(ix) + "_L").c_str()));
+    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(leftAirC, 0.0, slabWorldZ)));
+    worldPhys->add(airPhysL);
+
+    // place left steel (adjacent to left air)
+    const double leftSteelC = leftEdge + aSide + 0.5 * sSide;
+    auto* steelShapeL = new GeoBox(0.5 * sSide, 0.5 * totalYSpan, halfZ);
+    auto* steelLogL   = new GeoLogVol(("InterModuleSteel_X" + std::to_string(ix) + "_L_LOG").c_str(), steelShapeL, MM.steel());
+    auto* steelPhysL  = new GeoPhysVol(steelLogL);
+    worldPhys->add(new GeoNameTag(("InterModuleSteel_X" + std::to_string(ix) + "_L").c_str()));
+    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(leftSteelC, 0.0, slabWorldZ)));
+    worldPhys->add(steelPhysL);
+
+    // place right steel (adjacent to right air)
+    const double rightSteelC = rightEdge - aSide - 0.5 * sSide;
+    auto* steelShapeR = new GeoBox(0.5 * sSide, 0.5 * totalYSpan, halfZ);
+    auto* steelLogR   = new GeoLogVol(("InterModuleSteel_X" + std::to_string(ix) + "_R_LOG").c_str(), steelShapeR, MM.steel());
+    auto* steelPhysR  = new GeoPhysVol(steelLogR);
+    worldPhys->add(new GeoNameTag(("InterModuleSteel_X" + std::to_string(ix) + "_R").c_str()));
+    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(rightSteelC, 0.0, slabWorldZ)));
+    worldPhys->add(steelPhysR);
+
+    // place right air
+    const double rightAirC = rightEdge - 0.5 * aSide;
+    auto* airShapeR = new GeoBox(0.5 * aSide, 0.5 * totalYSpan, halfZ);
+    auto* airLogR   = new GeoLogVol(("InterModuleAir_X" + std::to_string(ix) + "_R_LOG").c_str(), airShapeR, MM.air());
+    auto* airPhysR  = new GeoPhysVol(airLogR);
+    worldPhys->add(new GeoNameTag(("InterModuleAir_X" + std::to_string(ix) + "_R").c_str()));
+    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(rightAirC, 0.0, slabWorldZ)));
+    worldPhys->add(airPhysR);
+  }
+
+  // Y-direction boundaries (between rows)
+  // Y-direction boundaries (between rows)
+  const double airSideY   = 45.0 * GeoModelKernelUnits::mm;
+  const double steelSideY = 5.0  * GeoModelKernelUnits::mm;
+  const double totalReqY  = 2.0 * (airSideY + steelSideY);
+  for (int iy = 0; iy < ny - 1; ++iy) {
+    const double bottomEdge = ys[iy] + 0.5 * plateSize;
+    const double topEdge    = ys[iy+1] - 0.5 * plateSize;
+    const double gapY = topEdge - bottomEdge;
+    if (gapY <= 0) continue;
+
+    double aSide = airSideY;
+    double sSide = steelSideY;
+    if (gapY < totalReqY) {
+      const double scale = gapY / totalReqY;
+      aSide *= scale;
+      sSide *= scale;
+    }
+
+    // bottom air
+    const double botAirC = bottomEdge + 0.5 * aSide;
+    auto* airShapeB = new GeoBox(0.5 * totalXSpan, 0.5 * aSide, halfZ);
+    auto* airLogB   = new GeoLogVol(("InterModuleAir_Y" + std::to_string(iy) + "_B_LOG").c_str(), airShapeB, MM.air());
+    auto* airPhysB  = new GeoPhysVol(airLogB);
+    worldPhys->add(new GeoNameTag(("InterModuleAir_Y" + std::to_string(iy) + "_B").c_str()));
+    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(0.0, botAirC, slabWorldZ)));
+    worldPhys->add(airPhysB);
+
+    // bottom steel
+    const double botSteelC = bottomEdge + aSide + 0.5 * sSide;
+    auto* steelShapeB = new GeoBox(0.5 * totalXSpan, 0.5 * sSide, halfZ);
+    auto* steelLogB   = new GeoLogVol(("InterModuleSteel_Y" + std::to_string(iy) + "_B_LOG").c_str(), steelShapeB, MM.steel());
+    auto* steelPhysB  = new GeoPhysVol(steelLogB);
+    worldPhys->add(new GeoNameTag(("InterModuleSteel_Y" + std::to_string(iy) + "_B").c_str()));
+    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(0.0, botSteelC, slabWorldZ)));
+    worldPhys->add(steelPhysB);
+
+    // top steel
+    const double topSteelC = topEdge - aSide - 0.5 * sSide;
+    auto* steelShapeT = new GeoBox(0.5 * totalXSpan, 0.5 * sSide, halfZ);
+    auto* steelLogT   = new GeoLogVol(("InterModuleSteel_Y" + std::to_string(iy) + "_T_LOG").c_str(), steelShapeT, MM.steel());
+    auto* steelPhysT  = new GeoPhysVol(steelLogT);
+    worldPhys->add(new GeoNameTag(("InterModuleSteel_Y" + std::to_string(iy) + "_T").c_str()));
+    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(0.0, topSteelC, slabWorldZ)));
+    worldPhys->add(steelPhysT);
+
+    // top air
+    const double topAirC = topEdge - 0.5 * aSide;
+    auto* airShapeT = new GeoBox(0.5 * totalXSpan, 0.5 * aSide, halfZ);
+    auto* airLogT   = new GeoLogVol(("InterModuleAir_Y" + std::to_string(iy) + "_T_LOG").c_str(), airShapeT, MM.air());
+    auto* airPhysT  = new GeoPhysVol(airLogT);
+    worldPhys->add(new GeoNameTag(("InterModuleAir_Y" + std::to_string(iy) + "_T").c_str()));
+    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(0.0, topAirC, slabWorldZ)));
+    worldPhys->add(airPhysT);
+  }
+
   G4cout << "[DetectorConstruction] GeoModel world children = "
          << worldPhys->getNChildVols() << G4endl;
 
@@ -149,7 +287,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   PVConstLink worldLink = m_geoWorld;
   
   // This builder is concrete (VolumeBuilder is abstract)
-  ExtParameterisedVolumeBuilder vb("World");   // key string can be anything; "World" is fine
+VolumeBuilder vb("World");   // key string can be anything; "World" is fine
   
   G4LogicalVolume* g4WorldLV = vb.Build(worldLink);
   
@@ -157,7 +295,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4Exception("DetectorConstruction::Construct",
                 "Geo2G4BuildFailed",
                 FatalException,
-                "ExtParameterisedVolumeBuilder::Build returned null LV.");
+                "VolumeBuilder::Build returned null LV.");
   }
   
   auto* pvWorld = new G4PVPlacement(nullptr, {}, g4WorldLV, "WorldPV", nullptr, false, 0);
