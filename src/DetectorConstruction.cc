@@ -40,6 +40,7 @@
 #include "G4Threading.hh"
 #include "G4AutoLock.hh"
 #include <cstdlib>
+#include <cmath>
 
 
 using namespace GeoModelKernelUnits;
@@ -83,26 +84,40 @@ GeoPhysVol* DetectorConstruction::buildGeoModelWorld()
   MaterialManager MM;
   auto* air = MM.air();
 
-  auto cfg = readConfigFile(m_cfgFile);
+  auto cfg = readConfigFile("../calo.cfg");
+  // This setup is ECAL-only: do not build or reserve space for HCAL.
+  cfg.layers2.clear();
+  cfg.gap_ecal_hcal_mm = 0.0;
   
-  double aworldZ = GetSystemThickness(cfg.layers,cfg.scint_thickness_mm,cfg.scint_thickness_mm,cfg.hpl_thickness_mm,cfg.lead_thickness_mm,cfg.airgap_mm);
-  aworldZ += cfg.gap_ecal_hcal_mm;
-  aworldZ += GetSystemThickness(cfg.layers2,cfg.scint_thickness_mm,cfg.scint_thickness_mm,cfg.hpl_thickness_mm,cfg.iron_thickness_mm,cfg.airgap_mm);
-  
-    
-  const double worldZ = 120827 * GeoModelKernelUnits::mm; 
-  const double worldXY = (cfg.plate_xy_mm + std::max(cfg.tol_x_mm,cfg.tol_y_mm)) * std::max(cfg.module_nx,cfg.module_ny) * GeoModelKernelUnits::mm;
+  const double aworldZ = GetSystemThickness(cfg.layers,
+                                             cfg.scint_thickness_mm,
+                                             cfg.scint_thickness_mm,
+                                             cfg.hpl_thickness_mm,
+                                             cfg.ecal_iron_thickness_mm,
+                                             cfg.airgap_mm);
+
+  const int nx = std::max(1, cfg.module_nx);
+  const int ny = std::max(1, cfg.module_ny);
+  const double plateSize = cfg.plate_xy_mm * GeoModelKernelUnits::mm;
+  const double pitchX = (cfg.module_pitch_x_mm > 0.0
+                           ? cfg.module_pitch_x_mm
+                           : cfg.plate_xy_mm + cfg.tol_x_mm) * GeoModelKernelUnits::mm;
+  const double pitchY = (cfg.module_pitch_y_mm > 0.0
+                           ? cfg.module_pitch_y_mm
+                           : cfg.plate_xy_mm + cfg.tol_y_mm) * GeoModelKernelUnits::mm;
+  const double totalXSpan = (nx > 1) ? ((nx - 1) * pitchX + plateSize) : plateSize;
+  const double totalYSpan = (ny > 1) ? ((ny - 1) * pitchY + plateSize) : plateSize;
+  const double offsetX = cfg.detector_offset_x_mm * GeoModelKernelUnits::mm;
+  const double offsetY = cfg.detector_offset_y_mm * GeoModelKernelUnits::mm;
+  const double worldZ = 120827 * GeoModelKernelUnits::mm;
+  const double worldXY = 2.0 * std::max(std::abs(offsetX) + 0.5 * totalXSpan,
+                                        std::abs(offsetY) + 0.5 * totalYSpan)
+                         + 2.0 * std::max(cfg.tol_x_mm, cfg.tol_y_mm) * GeoModelKernelUnits::mm;
 
   auto* worldShape = new GeoBox(0.5*worldXY, 0.5*worldXY, 0.5*worldZ);
   auto* worldLog   = new GeoLogVol("WorldLog", worldShape, air);
   auto* worldPhys  = new GeoPhysVol(worldLog);
 
-
-const int nx = std::max(1, cfg.module_nx);
-const int ny = std::max(1, cfg.module_ny);
-
-const double pitchX = (cfg.module_pitch_x_mm > 0 ? cfg.module_pitch_x_mm : cfg.plate_xy_mm) * GeoModelKernelUnits::mm;
-const double pitchY = (cfg.module_pitch_y_mm > 0 ? cfg.module_pitch_y_mm : cfg.plate_xy_mm) * GeoModelKernelUnits::mm;
 
 // center the grid around (0,0)
 const double x0 = -0.5 * (nx - 1) * pitchX;
@@ -134,21 +149,18 @@ for (int ix = 0; ix < nx; ++ix) {
   }
 }
 
-  // ---- Inter-module boundary plates (steel + optional explicit air slabs)
+  // ---- Explicit air in the gaps between ECAL modules (no boundary steel).
   // Compute grid centres along X and Y
   std::vector<double> xs(nx), ys(ny);
   for (int ix = 0; ix < nx; ++ix) xs[ix] = x0 + ix * pitchX + cfg.detector_offset_x_mm * GeoModelKernelUnits::mm;
   for (int iy = 0; iy < ny; ++iy) ys[iy] = y0 + iy * pitchY + cfg.detector_offset_y_mm * GeoModelKernelUnits::mm;
 
-  const double plateSize = cfg.plate_xy_mm * GeoModelKernelUnits::mm;
-  const double totalYSpan = (ny > 1) ? ((ny - 1) * pitchY + plateSize) : plateSize;
-  const double totalXSpan = (nx > 1) ? ((nx - 1) * pitchX + plateSize) : plateSize;
-  // Limit inter-module slabs to ECAL region only
+  // The gaps extend only through the ECAL stack depth.
   const double ecalZ_mm = GetSystemThickness(cfg.layers,
                                               cfg.scint_thickness_mm,
                                               cfg.scint_thickness_mm,
                                               cfg.hpl_thickness_mm,
-                                              cfg.lead_thickness_mm,
+                                              cfg.ecal_iron_thickness_mm,
                                               cfg.airgap_mm);
   const double ecalZ = ecalZ_mm * GeoModelKernelUnits::mm;
   const double halfZ = 0.5 * ecalZ;
@@ -157,117 +169,41 @@ for (int ix = 0; ix < nx; ++ix) {
   const double ecalCenterLocal = cfg.center_stack ? (-0.5 * aworldZ * GeoModelKernelUnits::mm + 0.5 * ecalZ) : (0.5 * ecalZ);
   const double slabWorldZ = moduleWorldZ + ecalCenterLocal;
 
-  // X-direction boundaries (between columns)
-  // Desired per-side: 4.5 cm air + 0.5 cm steel (so between modules: air(4.5)+steel(0.5)+steel(0.5)+air(4.5)=10 cm)
-  const double airSideX   = 45.0 * GeoModelKernelUnits::mm;
-  const double steelSideX = 5.0  * GeoModelKernelUnits::mm;
-  const double totalReqX  = 2.0 * (airSideX + steelSideX);
+  // X gaps span the full row range. Y gaps below are divided by column so
+  // that the X/Y intersections are represented once and do not overlap.
   for (int ix = 0; ix < nx - 1; ++ix) {
     const double leftEdge  = xs[ix] + 0.5 * plateSize;
     const double rightEdge = xs[ix+1] - 0.5 * plateSize;
     const double gapX = rightEdge - leftEdge;
     if (gapX <= 0) continue;
 
-    double aSide = airSideX;
-    double sSide = steelSideX;
-    if (gapX < totalReqX) {
-      // clamp proportionally if physical gap is smaller than desired
-      const double scale = gapX / totalReqX;
-      aSide *= scale;
-      sSide *= scale;
-    }
-
-    // place left air
-    const double leftAirC = leftEdge + 0.5 * aSide;
-    auto* airShapeL = new GeoBox(0.5 * aSide, 0.5 * totalYSpan, halfZ);
-    auto* airLogL   = new GeoLogVol(("InterModuleAir_X" + std::to_string(ix) + "_L_LOG").c_str(), airShapeL, MM.air());
-    auto* airPhysL  = new GeoPhysVol(airLogL);
-    worldPhys->add(new GeoNameTag(("InterModuleAir_X" + std::to_string(ix) + "_L").c_str()));
-    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(leftAirC, 0.0, slabWorldZ)));
-    worldPhys->add(airPhysL);
-
-    // place left steel (adjacent to left air)
-    const double leftSteelC = leftEdge + aSide + 0.5 * sSide;
-    auto* steelShapeL = new GeoBox(0.5 * sSide, 0.5 * totalYSpan, halfZ);
-    auto* steelLogL   = new GeoLogVol(("InterModuleSteel_X" + std::to_string(ix) + "_L_LOG").c_str(), steelShapeL, MM.steel());
-    auto* steelPhysL  = new GeoPhysVol(steelLogL);
-    worldPhys->add(new GeoNameTag(("InterModuleSteel_X" + std::to_string(ix) + "_L").c_str()));
-    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(leftSteelC, 0.0, slabWorldZ)));
-    worldPhys->add(steelPhysL);
-
-    // place right steel (adjacent to right air)
-    const double rightSteelC = rightEdge - aSide - 0.5 * sSide;
-    auto* steelShapeR = new GeoBox(0.5 * sSide, 0.5 * totalYSpan, halfZ);
-    auto* steelLogR   = new GeoLogVol(("InterModuleSteel_X" + std::to_string(ix) + "_R_LOG").c_str(), steelShapeR, MM.steel());
-    auto* steelPhysR  = new GeoPhysVol(steelLogR);
-    worldPhys->add(new GeoNameTag(("InterModuleSteel_X" + std::to_string(ix) + "_R").c_str()));
-    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(rightSteelC, 0.0, slabWorldZ)));
-    worldPhys->add(steelPhysR);
-
-    // place right air
-    const double rightAirC = rightEdge - 0.5 * aSide;
-    auto* airShapeR = new GeoBox(0.5 * aSide, 0.5 * totalYSpan, halfZ);
-    auto* airLogR   = new GeoLogVol(("InterModuleAir_X" + std::to_string(ix) + "_R_LOG").c_str(), airShapeR, MM.air());
-    auto* airPhysR  = new GeoPhysVol(airLogR);
-    worldPhys->add(new GeoNameTag(("InterModuleAir_X" + std::to_string(ix) + "_R").c_str()));
-    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(rightAirC, 0.0, slabWorldZ)));
-    worldPhys->add(airPhysR);
+    const double gapCenterX = 0.5 * (leftEdge + rightEdge);
+    auto* gapShape = new GeoBox(0.5 * gapX, 0.5 * totalYSpan, halfZ);
+    const std::string gapName = "InterModuleAir_X" + std::to_string(ix);
+    auto* gapLog = new GeoLogVol((gapName + "_LOG").c_str(), gapShape, MM.air());
+    auto* gapPhys = new GeoPhysVol(gapLog);
+    worldPhys->add(new GeoNameTag(gapName.c_str()));
+    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(gapCenterX, cfg.detector_offset_y_mm * GeoModelKernelUnits::mm, slabWorldZ)));
+    worldPhys->add(gapPhys);
   }
 
-  // Y-direction boundaries (between rows)
-  // Y-direction boundaries (between rows)
-  const double airSideY   = 45.0 * GeoModelKernelUnits::mm;
-  const double steelSideY = 5.0  * GeoModelKernelUnits::mm;
-  const double totalReqY  = 2.0 * (airSideY + steelSideY);
+  // Y gaps are one air volume per module column, preventing overlap with X gaps.
   for (int iy = 0; iy < ny - 1; ++iy) {
     const double bottomEdge = ys[iy] + 0.5 * plateSize;
     const double topEdge    = ys[iy+1] - 0.5 * plateSize;
     const double gapY = topEdge - bottomEdge;
     if (gapY <= 0) continue;
 
-    double aSide = airSideY;
-    double sSide = steelSideY;
-    if (gapY < totalReqY) {
-      const double scale = gapY / totalReqY;
-      aSide *= scale;
-      sSide *= scale;
+    const double gapCenterY = 0.5 * (bottomEdge + topEdge);
+    for (int ix = 0; ix < nx; ++ix) {
+      auto* gapShape = new GeoBox(0.5 * plateSize, 0.5 * gapY, halfZ);
+      const std::string gapName = "InterModuleAir_Y" + std::to_string(iy) + "_X" + std::to_string(ix);
+      auto* gapLog = new GeoLogVol((gapName + "_LOG").c_str(), gapShape, MM.air());
+      auto* gapPhys = new GeoPhysVol(gapLog);
+      worldPhys->add(new GeoNameTag(gapName.c_str()));
+      worldPhys->add(new GeoTransform(GeoTrf::Translate3D(xs[ix], gapCenterY, slabWorldZ)));
+      worldPhys->add(gapPhys);
     }
-
-    // bottom air
-    const double botAirC = bottomEdge + 0.5 * aSide;
-    auto* airShapeB = new GeoBox(0.5 * totalXSpan, 0.5 * aSide, halfZ);
-    auto* airLogB   = new GeoLogVol(("InterModuleAir_Y" + std::to_string(iy) + "_B_LOG").c_str(), airShapeB, MM.air());
-    auto* airPhysB  = new GeoPhysVol(airLogB);
-    worldPhys->add(new GeoNameTag(("InterModuleAir_Y" + std::to_string(iy) + "_B").c_str()));
-    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(0.0, botAirC, slabWorldZ)));
-    worldPhys->add(airPhysB);
-
-    // bottom steel
-    const double botSteelC = bottomEdge + aSide + 0.5 * sSide;
-    auto* steelShapeB = new GeoBox(0.5 * totalXSpan, 0.5 * sSide, halfZ);
-    auto* steelLogB   = new GeoLogVol(("InterModuleSteel_Y" + std::to_string(iy) + "_B_LOG").c_str(), steelShapeB, MM.steel());
-    auto* steelPhysB  = new GeoPhysVol(steelLogB);
-    worldPhys->add(new GeoNameTag(("InterModuleSteel_Y" + std::to_string(iy) + "_B").c_str()));
-    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(0.0, botSteelC, slabWorldZ)));
-    worldPhys->add(steelPhysB);
-
-    // top steel
-    const double topSteelC = topEdge - aSide - 0.5 * sSide;
-    auto* steelShapeT = new GeoBox(0.5 * totalXSpan, 0.5 * sSide, halfZ);
-    auto* steelLogT   = new GeoLogVol(("InterModuleSteel_Y" + std::to_string(iy) + "_T_LOG").c_str(), steelShapeT, MM.steel());
-    auto* steelPhysT  = new GeoPhysVol(steelLogT);
-    worldPhys->add(new GeoNameTag(("InterModuleSteel_Y" + std::to_string(iy) + "_T").c_str()));
-    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(0.0, topSteelC, slabWorldZ)));
-    worldPhys->add(steelPhysT);
-
-    // top air
-    const double topAirC = topEdge - 0.5 * aSide;
-    auto* airShapeT = new GeoBox(0.5 * totalXSpan, 0.5 * aSide, halfZ);
-    auto* airLogT   = new GeoLogVol(("InterModuleAir_Y" + std::to_string(iy) + "_T_LOG").c_str(), airShapeT, MM.air());
-    auto* airPhysT  = new GeoPhysVol(airLogT);
-    worldPhys->add(new GeoNameTag(("InterModuleAir_Y" + std::to_string(iy) + "_T").c_str()));
-    worldPhys->add(new GeoTransform(GeoTrf::Translate3D(0.0, topAirC, slabWorldZ)));
-    worldPhys->add(airPhysT);
   }
 
   G4cout << "[DetectorConstruction] GeoModel world children = "
@@ -297,6 +233,20 @@ VolumeBuilder vb("World");   // key string can be anything; "World" is fine
                 FatalException,
                 "VolumeBuilder::Build returned null LV.");
   }
+
+  // Keep the world and module containers in vacuum; explicit gap volumes and
+  // the layer envelopes retain their air material.
+  auto* vacuum = G4NistManager::Instance()->FindOrBuildMaterial("G4_Galactic");
+  g4WorldLV->SetMaterial(vacuum);
+  int vacuumModuleCount = 0;
+  for (auto* lv : *G4LogicalVolumeStore::GetInstance()) {
+    if (lv->GetName().find("ModuleLog") != std::string::npos) {
+      lv->SetMaterial(vacuum);
+      ++vacuumModuleCount;
+    }
+  }
+  G4cout << "[DetectorConstruction] Vacuum assigned to world and "
+         << vacuumModuleCount << " module envelope(s)." << G4endl;
   
   auto* pvWorld = new G4PVPlacement(nullptr, {}, g4WorldLV, "WorldPV", nullptr, false, 0);
   
@@ -353,7 +303,7 @@ VolumeBuilder vb("World");   // key string can be anything; "World" is fine
 
 
   else if (visMode == 1) {
-    auto* visECALlead  = new G4VisAttributes(G4Colour(0.6, 0.6, 0.6, 0.7)); visECALlead->SetForceSolid(true);  visECALlead->SetDaughtersInvisible(true);
+    auto* visECALiron  = new G4VisAttributes(G4Colour(0.6, 0.6, 0.6, 0.7)); visECALiron->SetForceSolid(true);  visECALiron->SetDaughtersInvisible(true);
     auto* visECALscint = new G4VisAttributes(G4Colour(0.0, 0.8, 0.4, 0.7)); visECALscint->SetForceSolid(true); visECALscint->SetDaughtersInvisible(true);
     auto* visECALhpl   = new G4VisAttributes(G4Colour(0.1, 0.3, 1.0, 0.7)); visECALhpl->SetForceSolid(true);   visECALhpl->SetDaughtersInvisible(true);
     auto* visHCALiron  = new G4VisAttributes(G4Colour(0.9, 0.1, 0.1, 0.7)); visHCALiron->SetForceSolid(true);  visHCALiron->SetDaughtersInvisible(true);
@@ -364,7 +314,7 @@ VolumeBuilder vb("World");   // key string can be anything; "World" is fine
       if      (n == "WorldLog" || n == "World")          lv->SetVisAttributes(visWorld);
       else if (n.find("ModuleLog") != std::string::npos) lv->SetVisAttributes(visModule);
       else if (n.find("ECAL") != std::string::npos && n.find("_LOG") != std::string::npos) {
-        if      (n.find("Lead") != std::string::npos) lv->SetVisAttributes(visECALlead);
+        if      (n.find("Iron") != std::string::npos) lv->SetVisAttributes(visECALiron);
         else if (n.find("HPL")  != std::string::npos) lv->SetVisAttributes(visECALhpl);
         else                                           lv->SetVisAttributes(visECALscint);
       }

@@ -1,5 +1,7 @@
-/vis/open OGL
-/vis/drawVolume
-/vis/viewer/set/autoRefresh true
-/vis/scene/add/axes 0 0 0 0.5 m
-/run/initialize
+/vis/open TSG_OFFSCREEN 1600x1200
+/vis/drawVolume MODULE_MX1Y1
+/vis/viewer/set/style surface
+/vis/viewer/set/viewpointThetaPhi 90 0
+/vis/viewer/zoom 0.25
+/vis/tsg/offscreen/set/file ecal_module_side.png
+/vis/viewer/rebuild

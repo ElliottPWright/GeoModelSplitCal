@@ -123,15 +123,24 @@ int main(int argc, char** argv)
   auto* UImanager = G4UImanager::GetUIpointer();
   
   if (run.visualize) {
-    int ui_argc = 1;
-    char* ui_argv[1] = { argv[0] };
-    auto* app = new G4UIExecutive(ui_argc, ui_argv);
 
+    // Run the visualization macro without starting a Qt/X11 UI
     UImanager->ApplyCommand("/control/execute " + G4String(run.vis_macro));
-    app->SessionStart();
-    if(vis != nullptr) delete vis;
-    delete app;
-  } else {
+
+    // Run the requested number of events
+    if (run.n_events > 0) {
+        UImanager->ApplyCommand(
+            "/run/beamOn " + G4String(std::to_string(run.n_events))
+        );
+    }
+
+     // Force final offscreen image generation after the run
+    UImanager->ApplyCommand("/vis/viewer/rebuild");
+    UImanager->ApplyCommand("/vis/viewer/update");
+
+    if (vis != nullptr) delete vis;
+
+} else {
     // batch behavior
     if (!run.macro.empty()) {
       UImanager->ApplyCommand("/control/execute " + G4String(run.macro));

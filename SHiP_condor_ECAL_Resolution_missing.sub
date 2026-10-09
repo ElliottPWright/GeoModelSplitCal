@@ -1,0 +1,16 @@
+universe       = vanilla
+executable     = run_job_ECAL_Resolution.sh
+arguments      = $(Process)
+
+request_cpus   = 1
+request_memory = 8GB
+request_disk   = 20GB
+
+log    = logs/calo_production_missing.$(Cluster).$(Process).log
+output = logs/calo_production_missing.$(Cluster).$(Process).out
+error  = logs/calo_production_missing.$(Cluster).$(Process).err
+
++MaxRuntime    = 86400
++JobFlavour    = "tomorrow"
+
+queue Process in (0,2,3)

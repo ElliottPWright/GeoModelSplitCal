@@ -60,6 +60,7 @@ CalorimeterConfig readConfigFile(const std::string& path)
     else if (key == "fiber_core_diameter_mm") cfg.fiber_core_diameter_mm = std::stod(val);
     else if (key == "airgap_mm") cfg.airgap_mm = std::stod(val);
     else if (key == "layers2") cfg.layers2 = parseIntList(val);
+    else if (key == "ecal_iron_thickness_mm") cfg.ecal_iron_thickness_mm = std::stod(val);
     else if (key == "iron_thickness_mm") cfg.iron_thickness_mm = std::stod(val);
     else if (key == "module_nx") cfg.module_nx = std::stoi(val);
     else if (key == "module_ny") cfg.module_ny = std::stoi(val);

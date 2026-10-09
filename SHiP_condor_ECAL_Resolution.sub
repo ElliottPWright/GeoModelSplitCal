@@ -1,0 +1,22 @@
+# HTCondor submit file for CERN LXPLUS
+universe       = vanilla
+initialdir     = /afs/cern.ch/user/m/mahajanv/GeoModelSplitCal
+executable     = $(initialdir)/run_job_ECAL_Resolution.sh
+arguments      = $(Process)
+
+# Resource requirements
+request_cpus   = 1
+request_memory = 8GB
+request_disk   = 20GB
+
+# Logging paths
+log    = $(initialdir)/logs/iron_vacuum.$(Cluster).$(Process).log
+output = $(initialdir)/logs/iron_vacuum.$(Cluster).$(Process).out
+error  = $(initialdir)/logs/iron_vacuum.$(Cluster).$(Process).err
+
+# Job duration
++MaxRuntime    = 86400
++JobFlavour    = "tomorrow"
+
+# One 10,000-electron job at each energy: 5, 10, 20, 50, and 100 GeV.
+queue 5
